@@ -15,8 +15,7 @@ class AppMetrics:
     application metrics into Prometheus metrics.
     """
 
-    def __init__(self, app_port=80, polling_interval_seconds=5):
-        self.app_port = app_port
+    def __init__(self, polling_interval_seconds=5):
         self.polling_interval_seconds = polling_interval_seconds
 
         # Prometheus metrics to collect
@@ -69,7 +68,6 @@ def main():
     balena.settings.set(key='api_endpoint', value=balenaUrl+'/')
     balena.auth.login(**credentials)
     app_metrics = AppMetrics(
-        app_port=app_port,
         polling_interval_seconds=polling_interval_seconds
     )
     start_http_server(exporter_port)
