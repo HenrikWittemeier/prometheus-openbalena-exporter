@@ -57,8 +57,7 @@ class AppMetrics:
 def main():
     """Main entry point"""
 
-    polling_interval_seconds = int(os.getenv("POLLING_INTERVAL_SECONDS", "5"))
-    app_port = int(os.getenv("APP_PORT", "80"))
+    polling_interval_seconds = int(os.getenv("POLLING_INTERVAL_SECONDS", "60"))
     exporter_port = int(os.getenv("EXPORTER_PORT", "9877"))
 
     balenaUrl = os.getenv("BALENA_API_URI", "https://api.balena-cloud.de")
