@@ -23,6 +23,10 @@ class AppMetrics:
         self.deviceCount = Gauge("balena_count_devices", "All existing devices")
         self.deviceMemory = Gauge("balena_device_memory_usage", "Device Memory Usage",
                                   ['deviceuuid', 'application', 'release'])
+        self.deviceCPU = Gauge("balena_device_cpu_usage", "Device CPU Usage",
+                                  ['deviceuuid', 'application', 'release'])
+        self.deviceStorage = Gauge("balena_device_storage_usage", "Device Storage Usage",
+                               ['deviceuuid', 'application', 'release'])
         self.deviceStatus = Enum("balena_device_status", "Device Status", ['deviceuuid', 'application', 'release'],states=['Idle','Running','Updating','None'])
         self.deviceOverallStatus = Enum("balena_device_overall_status"," Device Overall State", ['deviceuuid', 'application', 'release'],states=['online','offline','configuring','None','updating'])
         self.devicesOnRelease = Gauge("balena_release_number_devices","Number of Devices Running specific Release", ['release'])
@@ -51,8 +55,17 @@ class AppMetrics:
             appSlug = [application['app_name'] for application in applications if application['id'] == device['belongs_to__application']['__id']]
             if device['is_running__release']:
                 release = balena.models.release.get(device['is_running__release']['__id'])
+            else:
+                continue
             self.deviceMemory.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").set(
-                device['memory_usage'] or "0")
+                device['memory_usage']/device['memory_total']*100 or "0")
+            self.deviceStorage.labels(deviceuuid=device['uuid'], application=appSlug,
+                                     release=release['commit'] or "None").set(
+                (device['storage_usage']/device['storage_total'])*100 or "0")
+            storage = device['storage_usage']/device['storage_total']
+            self.deviceCPU.labels(deviceuuid=device['uuid'], application=appSlug,
+                                     release=release['commit'] or "None").set(
+                device['cpu_usage'] or "0")
             self.deviceStatus.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").state(
                 device['status'] or 'None')
             self.deviceOverallStatus.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").state(
