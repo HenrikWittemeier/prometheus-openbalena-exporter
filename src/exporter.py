@@ -24,6 +24,9 @@ class AppMetrics:
         self.deviceMemory = Gauge("balena_device_memory_usage", "Device Memory Usage",
                                   ['deviceuuid', 'application', 'release'])
         self.deviceStatus = Enum("balena_device_status", "Device Status", ['deviceuuid', 'application', 'release'],states=['Idle','Running','Updating','None'])
+        self.isOnline = Enum("balena_device_overall_status", "Device is Online", ['deviceuuid', 'application', 'release'],states=['Online','Offline','','None'])
+
+
 
     def run_metrics_loop(self):
         """Metrics fetching loop"""
@@ -44,10 +47,15 @@ class AppMetrics:
 
         devices = balena.models.device.get_all()
         self.deviceCount.set(len(devices))
+
         for device in devices:
-            self.deviceMemory.labels(deviceuuid=device['uuid'], application=device['uuid'], release=device['uuid']).set(
+            appSlug = [application['app_name'] for application in applications if application['id'] == device['belongs_to__application']['__id']]
+            if device['is_running__release']:
+                release = balena.models.release.get(device['is_running__release']['__id'])
+            self.deviceMemory.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").set(
                 device['memory_usage'] or "0")
-            self.deviceStatus.labels(deviceuuid=device['uuid'], application=device['uuid'], release=device['uuid']).state(
+
+            self.deviceStatus.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").state(
                 device['status'] or 'None')
 
         # Update Prometheus metrics with application metrics
