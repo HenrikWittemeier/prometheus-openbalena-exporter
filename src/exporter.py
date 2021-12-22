@@ -2,7 +2,7 @@
 
 import os
 import time
-
+import datetime
 from balena import Balena
 from prometheus_client import start_http_server, Gauge, Enum
 
@@ -24,10 +24,9 @@ class AppMetrics:
         self.deviceMemory = Gauge("balena_device_memory_usage", "Device Memory Usage",
                                   ['deviceuuid', 'application', 'release'])
         self.deviceStatus = Enum("balena_device_status", "Device Status", ['deviceuuid', 'application', 'release'],states=['Idle','Running','Updating','None'])
-        self.isOnline = Enum("balena_device_overall_status", "Device is Online", ['deviceuuid', 'application', 'release'],states=['Online','Offline','','None'])
-
-
-
+        self.deviceOverallStatus = Enum("balena_device_overall_status"," Device Overall State", ['deviceuuid', 'application', 'release'],states=['online','offline','configuring','None','updating'])
+        self.devicesOnRelease = Gauge("balena_release_number_devices","Number of Devices Running specific Release", ['release'])
+        self.releaseCreatedAt = Gauge("balena_release_created_at", "Time where Release was created", ['release'])
     def run_metrics_loop(self):
         """Metrics fetching loop"""
 
@@ -54,10 +53,12 @@ class AppMetrics:
                 release = balena.models.release.get(device['is_running__release']['__id'])
             self.deviceMemory.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").set(
                 device['memory_usage'] or "0")
-
             self.deviceStatus.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").state(
                 device['status'] or 'None')
-
+            self.deviceOverallStatus.labels(deviceuuid=device['uuid'], application=appSlug, release=release['commit'] or "None").state(
+                device['overall_status'] or 'None')
+            self.devicesOnRelease.labels(release=release['commit'] or "None").inc()
+            self.releaseCreatedAt.labels(release=release['commit'] or "None").set(datetime.datetime.strptime(release['created_at'],"%Y-%m-%dT%H:%M:%S.%fZ").timestamp())
         # Update Prometheus metrics with application metrics
 
 
