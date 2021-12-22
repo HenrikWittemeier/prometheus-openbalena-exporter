@@ -53,6 +53,7 @@ class AppMetrics:
         self.devicesOnRelease.clear()
         for device in devices:
             appSlug = [application['app_name'] for application in applications if application['id'] == device['belongs_to__application']['__id']]
+            appSlug = appSlug[0]
             if device['is_running__release']:
                 release = balena.models.release.get(device['is_running__release']['__id'])
             else:
